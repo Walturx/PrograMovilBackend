@@ -1,0 +1,25 @@
+@baseUrl = http://localhost:5000/api
+
+### 1. Iniciar Sesión (Login) con el usuario real de la BD
+POST {{baseUrl}}/sign-in
+Content-Type: application/json
+
+{
+  "email": "juan@email.com",
+  "password": "123456"
+}
+
+### 2. Registrar un NUEVO Usuario de Pruebas (SignUp)
+# Al ejecutar esto, se creará un nuevo registro en tu tabla 'users'
+POST {{baseUrl}}/sign-up
+Content-Type: application/json
+
+{
+  "email": "prueba@hotelya.com",
+  "password": "password123",
+  "name": "Carlos",
+  "lastname": "Mendoza",
+  "phone": "987654321",
+  "document_type": "DNI",
+  "document_number": "77777777"
+}

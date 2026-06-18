@@ -1,0 +1,53 @@
+{
+  "name": "demo",
+  "version": "1.0.0",
+  "description": "Instalar y activar el ambiente virtual - Linux:",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db:new": "npx dbmate -d \"db/migrations\" -e \"DB\" new ",
+    "db:up": "npx dbmate -d \"db/migrations\" -e \"DB\" up",
+    "db:rollback": "npx dbmate -d \"db/migrations\" -e \"DB\" rollback",
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "linux_build": "npm run linux_build:clean && npm run linux_build:compile && npm run linux_build:move",
+    "linux_build:clean": "rm -rf static/dist/*",
+    "linux_build:compile": "vite build",
+    "linux_build:move": "mkdir -p static/dist && cp build/* static/dist/",
+    "windows_build": "npm run windows_build:clean && npm run windows_build:compile && npm run windows_build:move",
+    "windows_build:clean": "if exist static\\dist rmdir /s /q static\\dist && mkdir static\\dist && copy build\\* static\\dist\\",
+    "windows_build:compile": "vite build",
+    "windows_build:move": "if not exist static\\dist mkdir static\\dist && copy build\\* static\\dist\\"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bootstrap": "^5.3.3",
+    "react": "^19.0.0",
+    "react-bootstrap": "^2.10.9",
+    "react-dom": "^19.0.0",
+    "react-router": "^7.2.0",
+    "react-router-dom": "^7.1.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react-refresh": "^1.3.6",
+    "chokidar": "^4.0.3",
+    "cross-env": "^7.0.3",
+    "dbmate": "^2.24.2",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.14.0",
+    "sqlite3": "^5.1.7",
+    "vite": "^6.0.5"
+  }
+}

@@ -1,0 +1,5 @@
+@baseUrl = http://localhost:5000/api
+
+### 1. Obtener Habitaciones del "Hotel Paradise" (ID: h1)
+# Este endpoint te listará los cuartos, precios y disponibilidad de ese hotel específico
+GET {{baseUrl}}/v1/hotels/h1/rooms

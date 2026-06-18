@@ -1,0 +1,9 @@
+-- migrate:up
+INSERT INTO hotels (id, location_id, name, description, stars, phone, email, cover_image_url, is_active, rating, distance_miles, available_rooms, tags, lat, lng) VALUES 
+('h1', 'loc1', 'Hotel Paradise', 'Un lujoso hotel frente al mar con vistas espectaculares y servicio de primera clase.', 5, '+51 1 234 5678', 'contacto@hotelparadise.com', 'https://images.unsplash.com/photo-1566073771259-6a8506099945', 1, 4.8, 1.2, 6, '["Pet Friendly", "Piscina"]', -12.1092, -77.0353),
+('h2', 'loc2', 'Ocean View Hotel', 'Hotel boutique con diseño moderno y acceso directo a la playa.', 4, '+51 1 345 6789', 'reservas@oceanview.com', 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa', 1, 4.5, 2.5, 4, '["Frente al mar", "Bar"]', -12.1234, -77.0456),
+('h3', 'loc3', 'Mountain Retreat', 'Un refugio acogedor en medio de las montañas con todas las comodidades modernas.', 4, '+51 84 456 7890', 'info@mountainretreat.com', 'https://images.unsplash.com/photo-1540555700478-4be289fbecef', 1, 4.9, 15.0, 8, '["Naturaleza", "Eco-friendly"]', -13.1631, -72.5450),
+('h4', 'loc4', 'Cusco Imperial Hotel', 'Hotel elegante con arquitectura colonial y spa con tratamientos andinos.', 5, '+51 84 567 8901', 'reservas@cuscoimperial.com', 'https://images.unsplash.com/photo-1445019980597-93fa8acb246c', 1, 4.7, 3.8, 3, '["Colonial", "Spa Andino"]', -13.5319, -71.9675),
+('h5', 'loc5', 'Arequipa Plaza Hotel', 'Hotel familiar con piscina temperada y restaurante de comida arequipeña.', 3, '+51 54 678 901', 'contacto@arequipaplaza.com', 'https://images.unsplash.com/photo-1564501049412-61c2a3083791', 1, 4.1, 5.0, 10, '["Familiar", "Piscina"]', -16.4090, -71.5375);
+-- migrate:down
+DELETE FROM hotels;
