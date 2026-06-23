@@ -35,12 +35,4 @@ def unauthorized_response(callback):
 
 @jwt.expired_token_loader
 def expired_token_response(jwt_header, jwt_payload):
-  return jsonify({"error": "El token ha expirado. Por favor, inicia sesión nuevamente."}), 401
-
-@jwt.invalid_token_loader
-def invalid_token_response(reason):
-  return jsonify({"error": "Token inválido o corrupto. Revisa tu autenticación."}), 401
-
-@jwt.needs_fresh_token_loader
-def needs_fresh_token_response(jwt_header, jwt_payload):
-  return jsonify({"error": "Se requiere un token fresco. Vuelve a iniciar sesión."}), 401
+  return jsonify({"error": "El token ha expirado."}), 401

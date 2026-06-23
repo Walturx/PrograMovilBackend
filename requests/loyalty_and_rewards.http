@@ -1,0 +1,25 @@
+### ==============================================================================
+### VARIABLES GLOBALES DEL MÓDULO
+### ==============================================================================
+@baseUrl = http://localhost:5000/apis/v1
+@token = TU_JWT_TOKEN_AQUI
+
+### Ver el catálogo público de premios disponibles para cambiar por estrellas
+GET {{baseUrl}}/loyalty/rewards
+
+###
+
+### Procesar el canje de una recompensa (Resta estrellas y crea el cupón)
+POST {{baseUrl}}/loyalty/redeem
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "reward_id": "rew_spa_day_01"
+}
+
+###
+
+### Ver "Mis Cupones" en la app móvil (Historial de premios listos o usados)
+GET {{baseUrl}}/loyalty/redemptions
+Authorization: Bearer {{token}}

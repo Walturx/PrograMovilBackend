@@ -1,0 +1,24 @@
+### ==============================================================================
+### VARIABLES GLOBALES DEL MÓDULO
+### ==============================================================================
+@baseUrl = http://localhost:5000/apis/v1
+@idHotel = hot_paradisio_01
+@idTipoHabitacion = rt_suite_deluxe
+
+### Obtener hoteles destacados para la pantalla principal (Home)
+GET {{baseUrl}}/home
+
+###
+
+### Buscar hoteles por texto (Barra de búsqueda en Flutter)
+GET {{baseUrl}}/home?q=paradise
+
+###
+
+### Obtener la ficha técnica detallada de un hotel (Habitaciones, Amenidades)
+GET {{baseUrl}}/hotels/{{idHotel}}
+
+###
+
+### Consultar características, capacidad y precio base de un tipo de habitación
+GET {{baseUrl}}/room-types/{{idTipoHabitacion}}

@@ -1,266 +1,225 @@
-# hotel_ya\apis\reservation.py
+# ==============================================================================
+# ARCHIVO: hotel_ya/apis/reservation.py
+# PROPÓSITO: Este módulo centraliza los endpoints transaccionales del flujo de
+#            reservas dentro del ecosistema "Hotel Ya". Administra la consulta de
+#            metadatos de habitaciones, la inserción segura y atómica de nuevas 
+#            reservas con múltiples huéspedes (Guests) y el listado del historial
+#            completo de estancias del usuario para la aplicación en Flutter.
+# ==============================================================================
+
 import traceback
 from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from main.database import Session
-from main.models import Reservation, Room, RoomType, Guest, Payment, User
-from sqlalchemy.orm import joinedload
+from main.models import Reservation, Room, RoomType, Guest, User
 
+# Creación del Blueprint para registrar el módulo en la arquitectura de Flask
 api = Blueprint('hotel_ya_apis_reservations', __name__)
 
 @api.route('/apis/v1/room-types/<string:room_type_id>', methods=['GET'])
 def get_room_type(room_type_id):
     """
-    Endpoint para la pantalla '/reservation'.
-    Obtiene la información y capacidad del tipo de habitación seleccionada.
+    Endpoint para Tipo de Habitación.
+
+    GET /apis/v1/room-types/<room_type_id>
+    Obtiene la información, precio base y capacidad máxima de un tipo de habitación específico.
     """
-    response = None
-    status = 200
     session = Session()
     try:
-        rt = session.query(RoomType).filter(RoomType.id == room_type_id).first()
+        # Filtramos usando id_room_type conforme al esquema físico SQL real
+        rt = session.query(RoomType).filter(RoomType.id_room_type == room_type_id).first()
         if not rt:
             return jsonify({
                 'message': f'No se encontró el tipo de habitación con ID {room_type_id}',
-                'data': None, 'success': False, 'error': 'Not Found'
+                'data': None, 
+                'success': False, 
+                'error': 'Not Found'
             }), 404
 
-        response = jsonify({
+        return jsonify({
             'message': 'Tipo de habitación cargado correctamente',
-            'data': rt.to_dict(),
-            'success': True, 'error': None
-        })
-    except Exception as e:
-        traceback.print_exc()
-        response = jsonify({
-            'message': 'Error al consultar el tipo de habitación',
-            'data': None, 'success': False, 'error': str(e)
-        })
-        status = 500
-    finally:
-        session.close()
-
-    return response, status
-
-
-@api.route('/apis/v1/rooms/<string:room_id>', methods=['GET'])
-def get_room_status(room_id):
-    """
-    Endpoint para la pantalla '/reservation'.
-    Verifica en tiempo real si la habitación en específico sigue estando libre.
-    """
-    response = None
-    status = 200
-    session = Session()
-    try:
-        room = session.query(Room).filter(Room.id == room_id).first()
-        if not room:
-            return jsonify({
-                'message': f'No se encontró la habitación con ID {room_id}',
-                'data': None, 'success': False, 'error': 'Not Found'
-            }), 404
-
-        response = jsonify({
-            'message': 'Disponibilidad verificada con éxito',
             'data': {
-                'id': room.id,
-                'room_number': room.room_number,
-                'is_available': room.is_available
+                'id': rt.id_room_type,
+                'name': rt.name,
+                'description': rt.description if rt.description else '',
+                'base_price': float(rt.base_price) if rt.base_price else 0.0,
+                'capacity': rt.capacity
             },
-            'success': True, 'error': None
-        })
-    except Exception as e:
-        traceback.print_exc()
-        response = jsonify({
-            'message': 'Error al verificar el estado de la habitación',
-            'data': None, 'success': False, 'error': str(e)
-        })
-        status = 500
-    finally:
-        session.close()
-
-    return response, status
-
-
-@api.route('/apis/v1/reservations/pre-calculate', methods=['POST'])
-def pre_calculate():
-    """
-    Endpoint para la pantalla '/reservation/details'.
-    Calcula de manera exacta los subtotales, impuestos y estrellas a ganar.
-    """
-    data = request.get_json()
-    if not data or 'pricePerNight' not in data:
-        return jsonify({
-            'message': 'Falta el parámetro pricePerNight',
-            'data': None, 'success': False, 'error': 'Bad Request'
-        }), 400
-
-    try:
-        price_per_night = float(data.get('pricePerNight', 0))
-        
-        # Desglose matemático basado en tus parámetros de Flutter
-        subtotal = price_per_night
-        taxes = subtotal * 0.18  # 18% de impuesto estándar
-        total = subtotal + taxes
-        stars_earned = int(subtotal // 10)  # Gana 1 estrella por cada 10 unidades de precio base
-
-        return jsonify({
-            'message': 'Desglose financiero calculado correctamente',
-            'data': {
-                'subtotal': subtotal,
-                'taxes': taxes,
-                'total': total,
-                'stars_earned': stars_earned
-            },
-            'success': True, 'error': None
+            'success': True, 
+            'error': None
         }), 200
     except Exception as e:
+        traceback.print_exc()
         return jsonify({
-            'message': 'Ocurrió un error en el cálculo financiero',
-            'data': None, 'success': False, 'error': str(e)
+            'message': 'Error al procesar la solicitud del tipo de habitación',
+            'data': None, 
+            'success': False, 
+            'error': str(e)
         }), 500
+    finally:
+        session.close()
 
 
 @api.route('/apis/v1/reservations', methods=['POST'])
 @jwt_required()
 def create_reservation():
     """
-    Endpoint para la pantalla '/payment'.
-    Registra de manera transaccional la reserva inicial en estado 'pending' 
-    e inserta de forma segura a todos los acompañantes (guests).
+    Endpoint Transaccional para Creación de Reservas.
+
+    POST /apis/v1/reservations
+    Genera un registro atómico de pre-reserva en estado 'pending' vinculando
+    dinámicamente el listado de acompañantes obligatorios (Guests).
     """
     user_id = get_jwt_identity()
     data = request.get_json()
 
-    if not data or 'qrData' not in data or 'roomId' not in data:
+    if not data or 'room_id' not in data or 'check_in' not in data or 'check_out' not in data:
         return jsonify({
-            'message': 'Faltan parámetros obligatorios para registrar la reserva',
-            'data': None, 'success': False, 'error': 'Bad Request'
+            'message': 'Los campos room_id, check_in y check_out son obligatorios',
+            'data': None, 
+            'success': False, 
+            'error': 'Bad Request'
         }), 400
 
     session = Session()
     try:
-        # Instanciar la reserva usando el string ID del token JWT
-        new_res = Reservation(
-            id=data['qrData'],  # Identificador compartido con el QR
+        # 1. Validar la existencia física y disponibilidad de la habitación elegida
+        room = session.query(Room).filter(Room.id_room == data.get('room_id')).first()
+        if not room:
+            return jsonify({
+                'message': 'La habitación seleccionada no existe',
+                'data': None, 
+                'success': False, 
+                'error': 'Not Found'
+            }), 404
+
+        if not room.is_available:
+            return jsonify({
+                'message': 'La habitación ya no se encuentra disponible para reserva',
+                'data': None, 
+                'success': False, 
+                'error': 'Conflict'
+            }), 409
+
+        # Generador de ID único transaccional basado en marcas de tiempo para SQLite
+        timestamp_now = int(datetime.utcnow().timestamp())
+        res_id = f"res_{timestamp_now}"
+
+        # 2. Inserción de la cabecera de la Reserva en estado pendiente de pago
+        new_reservation = Reservation(
+            id_reservation=res_id,
             user_id=str(user_id),
-            room_id=data['roomId'],
-            check_in=datetime.fromisoformat(data['checkIn'].replace('Z', '')),
-            check_out=datetime.fromisoformat(data['checkOut'].replace('Z', '')),
-            total_price=float(data['totalPrice']),
-            adults=int(data.get('adults', 1)),
-            children=int(data.get('children', 0)),
-            special_requests=data.get('specialRequests', ''),
-            status="pending",
+            room_id=room.id_room,
+            check_in=data.get('check_in'),
+            check_out=data.get('check_out'),
+            total_price=data.get('total_price', 0.0),
+            status="pending",  # Esperando flujo QR financiero de payments.py
+            adults=data.get('adults', 1),
+            children=data.get('children', 0),
+            special_requests=data.get('special_requests', ''),
             created_at=datetime.utcnow()
         )
-        session.add(new_res)
+        session.add(new_reservation)
 
-        # Registro de acompañantes (guests) alineado con los modelos mapeados
-        if 'guests' in data and isinstance(data['guests'], list):
-            for idx, g in enumerate(data['guests']):
-                guest = Guest(
-                    id=f"gst_{int(datetime.utcnow().timestamp())}_{idx}",
-                    reservation_id=new_res.id,
-                    name=g.get('name', ''),
-                    lastname=g.get('lastname', ''),
-                    document_type=g.get('documentType', ''),
-                    document_number=g.get('documentNumber', ''),
-                    nationality=g.get('nationality', '')
-                )
-                session.add(guest)
+        # 3. Registro iterativo de huéspedes adicionales (Acompañantes en Flutter)
+        guests_input = data.get('guests', [])
+        for index, g_data in enumerate(guests_input):
+            guest_id = f"gst_{timestamp_now}_{index}"
+            new_guest = Guest(
+                id_guest=guest_id,
+                reservation_id=res_id,
+                first_name=g_data.get('first_name'),
+                last_name=g_data.get('last_name'),
+                document_number=g_data.get('document_number'),
+                age=g_data.get('age', 18)
+            )
+            session.add(new_guest)
 
+        # Confirmación atómica completa de la operación
         session.commit()
 
         return jsonify({
-            'message': 'Reserva y acompañantes registrados correctamente',
-            'data': {'reservation_id': new_res.id},
-            'success': True, 'error': None
+            'message': 'Pre-reserva creada con éxito. Proceda al módulo de pago.',
+            'data': {
+                'id': new_reservation.id_reservation,
+                'total_price': float(new_reservation.total_price),
+                'status': new_reservation.status
+            },
+            'success': True, 
+            'error': None
         }), 201
 
     except Exception as e:
-        session.rollback()
+        session.rollback()  # Revierte todo el bloque relacional si algo falla para evitar inconsistencias
         traceback.print_exc()
         return jsonify({
-            'message': 'Error transaccional al procesar la reserva',
-            'data': None, 'success': False, 'error': str(e)
+            'message': 'Ocurrió un error transaccional al procesar la reserva',
+            'data': None, 
+            'success': False, 
+            'error': str(e)
         }), 500
     finally:
         session.close()
 
 
-@api.route('/apis/v1/payments/qr/<string:reservation_id>', methods=['GET'])
-def get_payment_qr(reservation_id):
+@api.route('/apis/v1/reservations', methods=['GET'])
+@jwt_required()
+def get_my_reservations():
     """
-    Endpoint para la pantalla '/payment/qr'.
-    Genera la cadena de datos correspondiente al código de pago.
-    """
-    return jsonify({
-        'message': 'Datos del QR de pago generados',
-        'data': {
-            'qrData': f"HOTEL_YA_PAY_{reservation_id}",
-            'status': 'pending_payment'
-        },
-        'success': True, 'error': None
-    }), 200
+    Endpoint para Historial de Estancias.
 
-
-@api.route('/apis/v1/payments/status/<string:reservation_id>', methods=['GET'])
-def check_payment_status(reservation_id):
+    GET /apis/v1/reservations
+    Recupera el historial completo de estancias (activas, pasadas y pendientes)
+    del usuario autenticado mapeado de manera limpia para los listados de Flutter.
     """
-    Endpoint para el Polling de la pantalla '/payment/qr'.
-    Simula la aprobación del pago QR, actualizando la ocupación del cuarto 
-    y abonando los puntos de fidelidad (estrellas) al usuario.
-    """
+    user_id = get_jwt_identity()
     session = Session()
     try:
-        res = session.query(Reservation).filter(Reservation.id == reservation_id).first()
-        if not res:
-            return jsonify({
-                'message': 'No se encontró el registro de la reserva solicitada',
-                'data': None, 'success': False, 'error': 'Not Found'
-            }), 404
+        reservations = (
+            session.query(Reservation)
+            .filter(Reservation.user_id == str(user_id))
+            .order_by(Reservation.created_at.desc())
+            .all()
+        )
+        
+        res_list = []
+        for r in reservations:
+            # Control seguro de parseo para marcas de tiempo provenientes de SQLite
+            if isinstance(r.created_at, datetime):
+                fecha_str = r.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            elif isinstance(r.created_at, str):
+                fecha_str = r.created_at
+            else:
+                fecha_str = ''
 
-        # Simulación de aprobación de pasarela
-        if res.status == "pending":
-            res.status = "confirmed"
-            
-            # Cambiamos el estado de la habitación asociada
-            if res.room:
-                res.room.is_available = False
-
-            # Registramos el pago aprobado en la tabla de pagos
-            pay = Payment(
-                id=f"pay_{int(datetime.utcnow().timestamp())}",
-                reservation_id=res.id,
-                amount=res.total_price,
-                method="QR",
-                status="paid",
-                paid_at=datetime.utcnow(),
-                transaction_id=f"tx_{int(datetime.utcnow().timestamp())}"
-            )
-            session.add(pay)
-
-            # Otorgamos las estrellas de fidelidad acumuladas en el usuario
-            user = session.query(User).filter(User.id == res.user_id).first()
-            if user:
-                user.stars_available += int(res.total_price // 10)
-
-            session.commit()
+            res_list.append({
+                'id': r.id_reservation,
+                'room_id': r.room_id,
+                'check_in': r.check_in,
+                'check_out': r.check_out,
+                'total_price': float(r.total_price) if r.total_price else 0.0,
+                'status': r.status,  # 'pending', 'confirmed', 'cancelled'
+                'adults': r.adults,
+                'children': r.children,
+                'special_requests': r.special_requests if r.special_requests else '',
+                'created_at': fecha_str
+            })
 
         return jsonify({
-            'message': 'Consulta de estado de pago procesada',
-            'data': {'status': res.status},
-            'success': True, 'error': None
+            'message': 'Historial de reservas obtenido correctamente',
+            'data': res_list,
+            'success': True, 
+            'error': None
         }), 200
-
     except Exception as e:
-        session.rollback()
         traceback.print_exc()
         return jsonify({
-            'message': 'Error al verificar o actualizar el estado del pago',
-            'data': None, 'success': False, 'error': str(e)
+            'message': 'Error al consultar el historial de estancias',
+            'data': None, 
+            'success': False, 
+            'error': str(e)
         }), 500
     finally:
         session.close()
+

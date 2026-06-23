@@ -1,23 +1,38 @@
-# hotel_ya\apis\user.py
+# ==============================================================================
+# ARCHIVO: hotel_ya/apis/user.py
+# PROPÓSITO: Este módulo define los endpoints de la API de Flask relacionados con
+#            el ciclo de vida del usuario (Autenticación, Registro, Perfil, 
+#            Recuperación y Logout) adaptados para la app de Flutter.
+#            Actúa como capa de validación de seguridad e identidad utilizando JWT
+#            y transformando las propiedades relacionales de la BD (UML: id_user)
+#            en contratos limpios y seguros para los modelos en el Front-End.
+# ==============================================================================
+
 import traceback
 from datetime import timedelta, datetime
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt, get_jwt_identity
 from main.database import Session
 from main.models import User
-from flask_jwt_extended import create_access_token, jwt_required
+from main.application import REVOKED_TOKENS  # Lista negra global para la revocación de tokens
 
+# Creación del Blueprint para registrar el módulo de gestión de usuarios en Flask
 api = Blueprint('hotel_ya_apis_users', __name__)
 
 @api.route('/apis/v1/users/validate-token', methods=['GET'])
 @jwt_required()
 def validate_token():
     """
-    Endpoint utilizado por la SplashScreen ('/') para verificar en segundo plano
-    si el token almacenado localmente en el celular sigue activo y vigente.
+    Endpoint para Validación de Token.
+
+    GET /apis/v1/users/validate-token
+    Verifica en tiempo real desde los interceptores de Flutter si el token JWT 
+    almacenado localmente en el dispositivo sigue siendo válido y no ha expirado.
     """
+    user_id = get_jwt_identity()
     return jsonify({
-        'message': 'Token válido y activo',
-        'data': {'valid': True},
+        'message': 'Token activo y verificado correctamente',
+        'data': {'user_id': user_id},
         'success': True,
         'error': None
     }), 200
@@ -26,80 +41,57 @@ def validate_token():
 @api.route('/apis/v1/users/login', methods=['POST'])
 def login():
     """
-    Endpoint para la pantalla '/login'. Valida las credenciales (email y password)
-    y retorna el token JWT junto con el diccionario del usuario.
+    Endpoint para Inicio de Sesión.
+
+    POST /apis/v1/users/login
     """
     data = request.get_json()
-
-    if not data:
+    if not data or 'email' not in data or 'password' not in data:
         return jsonify({
-            'message': 'Debe enviar un JSON válido',
+            'message': 'El correo electrónico y la contraseña son obligatorios',
             'data': None,
             'success': False,
             'error': 'Bad Request'
         }), 400
 
-    email = data.get('email')
+    email = data.get('email').strip().lower()
     password = data.get('password')
 
-    if not email or not password:
-        return jsonify({
-            'message': 'email y password son obligatorios',
-            'data': None,
-            'success': False,
-            'error': 'Missing required fields'
-        }), 400
-
     session = Session()
-
     try:
-        # Búsqueda basada en el modelo unificado del diagrama PlantUML
-        user = (
-            session.query(User)
-            .filter(
-                User.email == email,
-                User.password_hash == password
-            )
-            .first()
-        )
+        user = session.query(User).filter(User.email == email).first()
 
-        if not user:
+        if not user or user.password_hash != password:  # Sincronizado con password_hash del UML
             return jsonify({
-                'message': 'Usuario o contraseña incorrectos',
+                'message': 'Credenciales de acceso incorrectas',
                 'data': None,
                 'success': False,
                 'error': 'Unauthorized'
             }), 401
 
-        # Generamos el token dinámico con 30 días de duración
-        expires = timedelta(days=30)
-        jwt = create_access_token(
-            identity=str(user.id),
-            expires_delta=expires,
-            additional_claims={
-                "user_id": user.id
-            }
-        )
+        access_token = create_access_token(identity=str(user.id_user), expires_delta=timedelta(days=7))
 
         return jsonify({
-            'message': 'Login exitoso',
+            'message': 'Autenticación exitosa',
             'data': {
-                'user': user.to_dict(),  # Entrega la estructura exacta sincronizada con Flutter
-                'jwt': jwt
+                'token': access_token,
+                'user': {
+                    'id': user.id_user,
+                    'email': user.email,
+                    'name': user.name
+                }
             },
             'success': True,
             'error': None
         }), 200
-
     except Exception as e:
         traceback.print_exc()
         return jsonify({
-            'message': 'Ocurrió un error durante el login',
+            'message': 'Error interno durante el proceso de login',
             'data': None,
             'success': False,
             'error': str(e)
         }), 500
-
     finally:
         session.close()
 
@@ -107,60 +99,68 @@ def login():
 @api.route('/apis/v1/users/register', methods=['POST'])
 def register_user():
     """
-    Permite la creación de nuevas cuentas de usuario directo desde la App móvil.
+    Endpoint para Registro de Nuevos Usuarios.
+
+    POST /apis/v1/users/register
     """
     data = request.get_json()
-
     if not data or 'email' not in data or 'password' not in data or 'name' not in data:
         return jsonify({
-            'message': 'Faltan campos requeridos (email, password y name)',
+            'message': 'Los campos email, password y name son obligatorios',
             'data': None,
             'success': False,
             'error': 'Bad Request'
         }), 400
 
+    email = data.get('email').strip().lower()
     session = Session()
     try:
-        # Verificar si el correo ya existe
-        existing_user = session.query(User).filter_by(email=data['email']).first()
+        existing_user = session.query(User).filter(User.email == email).first()
         if existing_user:
             return jsonify({
-                'message': 'El correo electrónico ya se encuentra registrado.',
+                'message': 'El correo electrónico ya se encuentra registrado',
                 'data': None,
                 'success': False,
                 'error': 'Conflict'
-            }), 400
+            }), 409
 
-        # Crear nueva instancia siguiendo la estructura del diagrama PlantUML y UserModel de Dart
+        user_id = f"usr_{int(datetime.utcnow().timestamp())}"
+
         new_user = User(
-            id=f"usr_{int(datetime.utcnow().timestamp())}",
-            email=data['email'],
-            password_hash=data['password'],
-            name=data['name'],
+            id_user=user_id,
+            email=email,
+            password_hash=data.get('password'),  # Sincronizado con password_hash de los modelos
+            name=data.get('name'),
             lastname=data.get('lastname', ''),
             phone=data.get('phone', ''),
-            document_type=data.get('document_type', ''),
-            document_number=data.get('document_number', ''),
-            avatar_url=data.get('avatar_url', ''),
             nationality=data.get('nationality', ''),
-            stars_available=0  # Comienza con cero puntos de fidelidad
+            avatar_url='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde',
+            stars_available=0
         )
-        
+
         session.add(new_user)
         session.commit()
 
+        access_token = create_access_token(identity=str(new_user.id_user), expires_delta=timedelta(days=7))
+
         return jsonify({
             'message': 'Usuario registrado exitosamente',
-            'data': new_user.to_dict(),
+            'data': {
+                'token': access_token,
+                'user': {
+                    'id': new_user.id_user,
+                    'email': new_user.email,
+                    'name': new_user.name
+                }
+            },
             'success': True,
             'error': None
         }), 201
-
     except Exception as e:
         session.rollback()
         traceback.print_exc()
         return jsonify({
-            'message': 'Ocurrió un error al registrar el usuario',
+            'message': 'Ocurrió un error al procesar el registro',
             'data': None,
             'success': False,
             'error': str(e)
@@ -172,21 +172,187 @@ def register_user():
 @api.route('/apis/v1/users/forgot-password', methods=['POST'])
 def forgot_password():
     """
-    Endpoint para la pantalla '/forgot_password'. Simula de forma estructurada
-    la petición de recuperación de contraseña.
+    Endpoint para Recuperación de Contraseñas.
+
+    POST /apis/v1/users/forgot-password
     """
     data = request.get_json()
     if not data or 'email' not in data:
         return jsonify({
-            'message': 'El campo email es obligatorio',
+            'message': 'El correo electrónico es un campo obligatorio',
             'data': None,
             'success': False,
             'error': 'Bad Request'
         }), 400
+
+    email = data.get('email').strip().lower()
+    session = Session()
+    try:
+        user = session.query(User).filter(User.email == email).first()
+        if not user:
+            return jsonify({
+                'message': 'Si el correo electrónico existe en nuestros registros, recibirá un mensaje a la brevedad',
+                'data': None,
+                'success': True,
+                'error': None
+            }), 200
+
+        return jsonify({
+            'message': 'Se ha enviado un enlace de restauración al correo proporcionado',
+            'data': {'email': email},
+            'success': True,
+            'error': None
+        }), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({
+            'message': 'Error al procesar la solicitud de recuperación',
+            'data': None,
+            'success': False,
+            'error': str(e)
+        }), 500
+    finally:
+        session.close()
+
+
+@api.route('/apis/v1/users/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    """
+    Endpoint para Cierre de Sesión (Invalidación de Token).
+
+    POST /apis/v1/users/logout
+    """
+    try:
+        jti = get_jwt()['jti']
         
-    return jsonify({
-        'message': 'Se ha enviado exitosamente un enlace de restauración a tu correo',
-        'data': None,
-        'success': True,
-        'error': None
-    }), 200
+        # CAMBIA .add(jti) POR .append(jti) PARA ACUMULAR EN LA LISTA
+        REVOKED_TOKENS.append(jti)
+        
+        return jsonify({
+            'message': 'Sesión cerrada correctamente. Token revocado con éxito.',
+            'data': None,
+            'success': True,
+            'error': None
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'message': 'Error al procesar el cierre de sesión',
+            'data': None,
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@api.route('/apis/v1/users/me', methods=['GET'])
+@jwt_required()
+def get_current_user_profile():
+    """
+    Endpoint de Perfil para Flutter (/profile).
+
+    GET /apis/v1/users/me
+    """
+    user_id = get_jwt_identity()
+    session = Session()
+    try:
+        user = session.query(User).filter(User.id_user == str(user_id)).first()
+        if not user:
+            return jsonify({
+                'message': 'No se encontró el registro del usuario',
+                'data': None,
+                'success': False,
+                'error': 'Not Found'
+            }), 404
+
+        stars_available = getattr(user, 'stars_available', 0) or 0
+
+        return jsonify({
+            'message': 'Perfil de usuario cargado con éxito',
+            'data': {
+                'id': user.id_user,
+                'email': user.email,
+                'name': user.name,
+                'lastname': user.lastname if user.lastname else '',
+                'phone': user.phone if user.phone else '',
+                'avatar_url': user.avatar_url if user.avatar_url else 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde',
+                'nationality': user.nationality if user.nationality else '',
+                'stars_available': int(stars_available)
+            },
+            'success': True,
+            'error': None
+        }), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({
+            'message': 'Ocurrió un error al obtener los detalles del perfil',
+            'data': None,
+            'success': False,
+            'error': str(e)
+        }), 500
+    finally:
+        # 💡 CORRECCIÓN: Se restauró el cierre del pool de conexiones para este método independiente
+        session.close()
+
+
+@api.route('/apis/v1/users/profile', methods=['PUT'])
+@jwt_required()
+def update_user_profile():
+    """
+    Endpoint para Editar la Información del Perfil.
+
+    PUT /apis/v1/users/profile
+    """
+    user_id = get_jwt_identity()
+    session = Session()
+    try:
+        req_data = request.get_json() or {}
+        
+        user = session.query(User).filter(User.id_user == str(user_id)).first()
+        if not user:
+            return jsonify({
+                'message': 'No se encontró el registro del usuario',
+                'data': None,
+                'success': False,
+                'error': 'Not Found'
+            }), 404
+
+        if 'name' in req_data:
+            user.name = req_data['name']
+        if 'lastname' in req_data:
+            user.lastname = req_data['lastname']
+        if 'phone' in req_data:
+            user.phone = req_data['phone']
+        if 'nationality' in req_data:
+            user.nationality = req_data['nationality']
+        if 'avatar_url' in req_data:
+            user.avatar_url = req_data['avatar_url']
+
+        session.commit()
+
+        return jsonify({
+            'message': 'Perfil actualizado con éxito',
+            'data': {
+                'id': user.id_user,
+                'email': user.email,
+                'name': user.name,
+                'lastname': user.lastname if user.lastname else '',
+                'phone': user.phone if user.phone else '',
+                'avatar_url': user.avatar_url if user.avatar_url else 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde',
+                'nationality': user.nationality if user.nationality else '',
+                'stars_available': int(getattr(user, 'stars_available', 0) or 0)
+            },
+            'success': True,
+            'error': None
+        }), 200
+
+    except Exception as e:
+        session.rollback()
+        traceback.print_exc()
+        return jsonify({
+            'message': 'Error al actualizar la información del perfil',
+            'data': None,
+            'success': False,
+            'error': str(e)
+        }), 500
+    finally:
+        session.close()

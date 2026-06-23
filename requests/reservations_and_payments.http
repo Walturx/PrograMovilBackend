@@ -1,0 +1,48 @@
+### ==============================================================================
+### VARIABLES GLOBALES DEL MÓDULO
+### ==============================================================================
+@baseUrl = http://localhost:5000/apis/v1
+@token = TU_JWT_TOKEN_AQUI
+@idReserva = res_777888
+
+### Crear una nueva reserva (Atómica con desglose de huéspedes acompañantes)
+POST {{baseUrl}}/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "hotel_id": "hot_paradisio_01",
+    "room_type_id": "rt_suite_deluxe",
+    "check_in": "2026-07-15",
+    "check_out": "2026-07-20",
+    "guests": [
+        {
+            "name": "Carlos Mendoza",
+            "document": "DNI12345678",
+            "is_primary": true
+        },
+        {
+            "name": "Ana Silva",
+            "document": "DNI87654321",
+            "is_primary": false
+        }
+    ]
+}
+
+###
+
+### Ver el historial cronológico de estancias/reservas del usuario autenticado
+GET {{baseUrl}}/reservations/history
+Authorization: Bearer {{token}}
+
+###
+
+### Obtener la cadena interoperable BPI para dibujar el QR de pago en Flutter
+GET {{baseUrl}}/payments/qr/{{idReserva}}
+Authorization: Bearer {{token}}
+
+###
+
+### Simular confirmación bancaria (Acepta el pago, congela inventario y da estrellas)
+POST {{baseUrl}}/payments/verify/{{idReserva}}
+Authorization: Bearer {{token}}

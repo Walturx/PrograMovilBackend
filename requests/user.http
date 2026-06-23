@@ -1,0 +1,69 @@
+### ==============================================================================
+### VARIABLES GLOBALES DEL MÓDULO
+### ==============================================================================
+@baseUrl = http://localhost:5000/apis/v1
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc4MjE3NzAxNiwianRpIjoiZDE3MTU5OTEtNTNhNi00MGM2LTkyZmMtMTUxZDIxMmJiYTdmIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InVzcl8xNzgyMTk0OTkzIiwibmJmIjoxNzgyMTc3MDE2LCJjc3JmIjoiMzJmZjA5YjQtZDkwMC00MDY4LTg5ZjQtNDY4YWRiNGI4NzkwIiwiZXhwIjoxNzgyNzgxODE2fQ.SbhHNESKtZMOX9SIp3dWOToFsO7UARD8mEi_0wHhxzc
+
+### Registrar un nuevo usuario
+POST {{baseUrl}}/users/register
+Content-Type: application/json
+
+{
+    "email": "carlos_flutter@example.com",
+    "password": "mi_password_segura",
+    "name": "Carlos",
+    "lastname": "Mendoza",
+    "phone": "+51999888777",
+    "nationality": "Peruano"
+}
+
+###
+
+### Iniciar sesión (Login)
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+    "email": "carlos_flutter@example.com",
+    "password": "mi_password_segura"
+}
+
+###
+
+### Validar vigencia del Token (Usado por interceptores de sesión en Flutter)
+GET {{baseUrl}}/users/validate-token
+Authorization: Bearer {{token}}
+
+###
+
+### Obtener mis datos de perfil completos
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{token}}
+
+###
+
+### Actualizar datos del perfil (Cambiar a PUT)
+PUT {{baseUrl}}/users/profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "lastname": "Mendoza Silva",
+    "phone": "+51900111222"
+}
+
+###
+
+### Recuperar Contraseña (Simulación de envío de correo)
+POST {{baseUrl}}/users/forgot-password
+Content-Type: application/json
+
+{
+    "email": "carlos_flutter@example.com"
+}
+
+###
+
+### Cerrar sesión (Logout - Envía token actual a la lista negra)
+POST {{baseUrl}}/users/logout
+Authorization: Bearer {{token}}

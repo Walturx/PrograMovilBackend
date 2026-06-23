@@ -1,0 +1,41 @@
+### ==============================================================================
+### VARIABLES GLOBALES DEL MÓDULO
+### ==============================================================================
+@baseUrl = http://localhost:5000/apis/v1
+@token = TU_JWT_TOKEN_AQUI
+@idReserva = res_777888
+@idNotificacion = not_abc123
+
+### Ver el catálogo general de servicios adicionales del hotel
+GET {{baseUrl}}/services
+
+###
+
+### Cargar un consumo extra de habitación (Vincular orden a una reserva activa)
+POST {{baseUrl}}/services/order
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "reservation_id": "{{idReserva}}",
+    "service_id": "srv_room_service_05",
+    "quantity": 2
+}
+
+###
+
+### Obtener el desglose de consumos acumulados durante la estadía de una reserva
+GET {{baseUrl}}/services?reservation_id={{idReserva}}
+Authorization: Bearer {{token}}
+
+###
+
+### Obtener la bandeja de notificaciones personales del usuario
+GET {{baseUrl}}/notifications
+Authorization: Bearer {{token}}
+
+###
+
+### Marcar una notificación específica como leída
+PATCH {{baseUrl}}/notifications/{{idNotificacion}}/read
+Authorization: Bearer {{token}}
