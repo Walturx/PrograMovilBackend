@@ -2,47 +2,59 @@
 ### VARIABLES GLOBALES DEL MÓDULO
 ### ==============================================================================
 @baseUrl = http://localhost:5000/apis/v1
-@token = TU_JWT_TOKEN_AQUI
-@idReserva = res_777888
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc4MjE3NzAxNiwianRpIjoiZDE3MTU5OTEtNTNhNi00MGM2LTkyZmMtMTUxZDIxMmJiYTdmIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InVzcl8xNzgyMTk0OTkzIiwibmJmIjoxNzgyMTc3MDE2LCJjc3JmIjoiMzJmZjA5YjQtZDkwMC00MDY4LTg5ZjQtNDY4YWRiNGI4NzkwIiwiZXhwIjoxNzgyNzgxODE2fQ.SbhHNESKtZMOX9SIp3dWOToFsO7UARD8mEi_0wHhxzc
+@idReserva = res_1234567890
 
-### Crear una nueva reserva (Atómica con desglose de huéspedes acompañantes)
+### ==============================================================================
+### RESERVAS
+### ==============================================================================
+
+### Crear una nueva reserva (atómica con acompañantes)
 POST {{baseUrl}}/reservations
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-    "hotel_id": "hot_paradisio_01",
-    "room_type_id": "rt_suite_deluxe",
+    "room_id": "r1",
     "check_in": "2026-07-15",
     "check_out": "2026-07-20",
+    "total_price": 450.00,
+    "adults": 2,
+    "children": 0,
+    "special_requests": "",
     "guests": [
         {
-            "name": "Carlos Mendoza",
-            "document": "DNI12345678",
-            "is_primary": true
+            "first_name": "Ana",
+            "last_name": "Silva",
+            "document_number": "12345678",
+            "age": 25
         },
         {
-            "name": "Ana Silva",
-            "document": "DNI87654321",
-            "is_primary": false
+            "first_name": "Carlos",
+            "last_name": "Mendoza",
+            "document_number": "87654321",
+            "age": 30
         }
     ]
 }
 
 ###
 
-### Ver el historial cronológico de estancias/reservas del usuario autenticado
-GET {{baseUrl}}/reservations/history
+### Ver historial de reservas del usuario autenticado
+GET {{baseUrl}}/reservations
 Authorization: Bearer {{token}}
 
 ###
 
-### Obtener la cadena interoperable BPI para dibujar el QR de pago en Flutter
+### ==============================================================================
+### PAGOS
+### ==============================================================================
+### Obtener el QR de pago de una reserva pendiente
 GET {{baseUrl}}/payments/qr/{{idReserva}}
 Authorization: Bearer {{token}}
 
 ###
 
-### Simular confirmación bancaria (Acepta el pago, congela inventario y da estrellas)
+### Confirmar pago (congela habitación, suma estrellas, registra pago)
 POST {{baseUrl}}/payments/verify/{{idReserva}}
 Authorization: Bearer {{token}}
