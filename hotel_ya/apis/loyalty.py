@@ -23,12 +23,25 @@ def get_active_rewards():
     Endpoint para el Catálogo de Premios Disponibles.
 
     GET /apis/v1/loyalty/rewards
-    Obtiene la lista de recompensas físicas vigentes en el sistema que el usuario 
-    puede reclamar utilizando sus estrellas acumuladas.
+    Obtiene la lista de recompensas físicas vigentes en el sistema.
     """
     session = Session()
     try:
+        if session.query(Reward).count() == 0:
+            premios_fuerza = [
+                Reward(id_reward='rw1', name='Helado Premium', description='Helado gratis', stars_cost=5, type='food', is_active=True),
+                Reward(id_reward='rw2', name='Chicha Gratis', description='Bebida gratis', stars_cost=4, type='drink', is_active=True),
+                Reward(id_reward='rw3', name='1 Noche Gratis', description='Hospedaje gratis', stars_cost=30, type='hotel', is_active=True)
+            ]
+            session.add_all(premios_fuerza)
+            session.commit()
+            
+        # Consulta directa y real a la base de datos
         rewards = session.query(Reward).filter(Reward.is_active == True).all()
+        
+        # 🔍 IMPRESIÓN DE CONTROL: Verás esto en la consola donde corre Flask
+        print(f"\n[DEBUG BD] Se encontraron {len(rewards)} premios activos en SQLite.")
+        
         rewards_list = []
         for r in rewards:
             rewards_list.append({
@@ -39,9 +52,10 @@ def get_active_rewards():
                 'type': r.type if r.type else 'General',
                 'is_active': bool(r.is_active)
             })
+            
         return jsonify({
             'message': 'Catálogo de premios obtenido correctamente',
-            'data': rewards_list,
+            'data': rewards_list, 
             'success': True, 
             'error': None
         }), 200
@@ -163,7 +177,15 @@ def redeem_reward():
                 'id': new_redemption.id_reward_redemption,
                 'stars_spent': int(new_redemption.stars_spent),
                 'status': new_redemption.status,
-                'qr_validation_string': qr_string
+                'qr_validation_string': qr_string,
+
+                'stars_remaining': int(user.stars_available), # <-- Envía las estrellas que le quedan al usuario
+                'reward': {                                   # <-- Envía qué fue lo que compró exactamente
+                    'id': reward.id_reward,
+                    'name': reward.name,
+                    'description': reward.description if reward.description else '',
+                    'type': reward.type if reward.type else 'General'
+                }
             },
             'success': True, 
             'error': None

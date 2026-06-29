@@ -71,6 +71,9 @@ def login():
 
         access_token = create_access_token(identity=str(user.id_user), expires_delta=timedelta(days=7))
 
+        # 💡 MODIFICACIÓN: Obtener estrellas disponibles de forma segura para mapearlo en la sesión iniciada
+        stars = int(getattr(user, 'stars_available', 0) or 0)
+
         return jsonify({
             'message': 'Autenticación exitosa',
             'data': {
@@ -78,7 +81,8 @@ def login():
                 'user': {
                     'id': user.id_user,
                     'email': user.email,
-                    'name': user.name
+                    'name': user.name,
+                    'stars_available': stars  # <-- Se añadió aquí
                 }
             },
             'success': True,
@@ -126,6 +130,9 @@ def register_user():
 
         user_id = f"usr_{int(datetime.utcnow().timestamp())}"
 
+        # 💡 MODIFICACIÓN: Lee el JSON enviado de Flutter, si no viene el campo usa 120 por defecto.
+        initial_stars = int(data.get('stars_available', 120))
+
         new_user = User(
             id_user=user_id,
             email=email,
@@ -135,7 +142,7 @@ def register_user():
             phone=data.get('phone', ''),
             nationality=data.get('nationality', ''),
             avatar_url='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde',
-            stars_available=0
+            stars_available=initial_stars  # <-- Se asignan las estrellas aquí
         )
 
         session.add(new_user)
@@ -150,7 +157,8 @@ def register_user():
                 'user': {
                     'id': new_user.id_user,
                     'email': new_user.email,
-                    'name': new_user.name
+                    'name': new_user.name,
+                    'stars_available': new_user.stars_available  # <-- Se añadió aquí para la respuesta de Flutter
                 }
             },
             'success': True,
@@ -290,7 +298,6 @@ def get_current_user_profile():
             'error': str(e)
         }), 500
     finally:
-        # 💡 CORRECCIÓN: Se restauró el cierre del pool de conexiones para este método independiente
         session.close()
 
 

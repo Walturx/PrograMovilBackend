@@ -25,7 +25,8 @@ CREATE TABLE users (
     avatar_url TEXT,
     nationality TEXT,
     reset_password_token INTEGER,
-    status BOOLEAN DEFAULT 1
+    status BOOLEAN DEFAULT 1,
+    stars_available INTEGER DEFAULT 0
 );
 
 -- 3. HOTELS

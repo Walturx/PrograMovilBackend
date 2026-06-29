@@ -184,6 +184,8 @@ class RewardRedemption(Base, ToString):
     status = Column(TEXT)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    reward = relationship("Reward")
+
 class LoyaltyTransaction(Base, ToString):
     __tablename__ = 'loyalty_transactions'
     id_loyalty_transaction = Column(TEXT, primary_key=True)

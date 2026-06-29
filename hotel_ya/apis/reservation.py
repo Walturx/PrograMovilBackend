@@ -101,25 +101,34 @@ def get_my_reservations():
             .all()
         )
 
-        def fmt_date(d):
-            if isinstance(d, datetime): return d.strftime('%Y-%m-%d %H:%M:%S')
-            if isinstance(d, str): return d
-            return ''
+        def formatear_fecha(fecha):
+            if not fecha:
+                return ''
+            # Si ya es un objeto datetime de Python
+            if isinstance(fecha, datetime):
+                return fecha.strftime('%Y-%m-%d %H:%M:%S')
+            # Si viene como String desde el archivo .sql de SQLite
+            if isinstance(fecha, str):
+                return fecha
+            return str(fecha)
 
         res_list = []
         for r in reservations:
             guests = session.query(Guest).filter(Guest.reservation_id == r.id_reservation).all()
+            
             res_list.append({
                 'id':               r.id_reservation,
                 'room_id':          r.room_id,
-                'check_in':         r.check_in,
-                'check_out':        r.check_out,
+                
+                'check_in':         formatear_fecha(r.check_in),
+                'check_out':        formatear_fecha(r.check_out),
+                
                 'total_price':      float(r.total_price) if r.total_price else 0.0,
                 'status':           r.status,
                 'adults':           r.adults,
                 'children':         r.children,
                 'special_requests': r.special_requests or '',
-                'created_at':       fmt_date(r.created_at),
+                'created_at':       formatear_fecha(r.created_at),
                 'guests': [{'first_name': g.first_name, 'last_name': g.last_name, 'document_number': g.document_number, 'age': g.age} for g in guests]
             })
 

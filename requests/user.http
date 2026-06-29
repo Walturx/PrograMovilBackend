@@ -2,19 +2,20 @@
 ### VARIABLES GLOBALES DEL MÓDULO
 ### ==============================================================================
 @baseUrl = http://localhost:5000/apis/v1
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc4MjE3NzAxNiwianRpIjoiZDE3MTU5OTEtNTNhNi00MGM2LTkyZmMtMTUxZDIxMmJiYTdmIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InVzcl8xNzgyMTk0OTkzIiwibmJmIjoxNzgyMTc3MDE2LCJjc3JmIjoiMzJmZjA5YjQtZDkwMC00MDY4LTg5ZjQtNDY4YWRiNGI4NzkwIiwiZXhwIjoxNzgyNzgxODE2fQ.SbhHNESKtZMOX9SIp3dWOToFsO7UARD8mEi_0wHhxzc
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc4Mjc0OTg1MiwianRpIjoiNmJhMDgyMjctNDI0Zi00YzUzLTgwNTUtM2VjM2Q2YTI0ZDAwIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InVzcl8xNzgyNzY3MjAyIiwibmJmIjoxNzgyNzQ5ODUyLCJjc3JmIjoiMjllNGUwNTktMzIwNC00NWY5LWI1YTMtMGRmZDcyMWQzZjhkIiwiZXhwIjoxNzgzMzU0NjUyfQ.zm_Zcq8mBt-_dzf2P-bd8NlaIYsA7LAh2poT-9Aw8YU
 
 ### Registrar un nuevo usuario
 POST {{baseUrl}}/users/register
 Content-Type: application/json
 
 {
-    "email": "carlos_flutter@example.com",
+    "email": "carlos_flutter_4@example.com",
     "password": "mi_password_segura",
     "name": "Carlos",
     "lastname": "Mendoza",
     "phone": "+51999888777",
-    "nationality": "Peruano"
+    "nationality": "Peruano",
+    "stars_available": 100
 }
 
 ###
@@ -24,7 +25,7 @@ POST {{baseUrl}}/users/login
 Content-Type: application/json
 
 {
-    "email": "carlos_flutter@example.com",
+    "email": "carlos_flutter_4@example.com",
     "password": "mi_password_segura"
 }
 
