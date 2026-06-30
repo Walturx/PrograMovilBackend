@@ -2,10 +2,18 @@
 ### VARIABLES GLOBALES DEL MÓDULO
 ### ==============================================================================
 @baseUrl = http://localhost:5000/apis/v1
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc4Mjc0OTg1MiwianRpIjoiNmJhMDgyMjctNDI0Zi00YzUzLTgwNTUtM2VjM2Q2YTI0ZDAwIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InVzcl8xNzgyNzY3MjAyIiwibmJmIjoxNzgyNzQ5ODUyLCJjc3JmIjoiMjllNGUwNTktMzIwNC00NWY5LWI1YTMtMGRmZDcyMWQzZjhkIiwiZXhwIjoxNzgzMzU0NjUyfQ.zm_Zcq8mBt-_dzf2P-bd8NlaIYsA7LAh2poT-9Aw8YU
-
-
+@token = TU_JWT_AQUI
 @idReserva = res_1234567890
+@idRoomType = rt1
+
+### ==============================================================================
+### ROOM TYPES
+### ==============================================================================
+
+### Obtener tipo de habitación por ID (público, no requiere token)
+GET {{baseUrl}}/room-types/{{idRoomType}}
+
+###
 
 ### ==============================================================================
 ### RESERVAS
@@ -51,6 +59,7 @@ Authorization: Bearer {{token}}
 ### ==============================================================================
 ### PAGOS
 ### ==============================================================================
+
 ### Obtener el QR de pago de una reserva pendiente
 GET {{baseUrl}}/payments/qr/{{idReserva}}
 Authorization: Bearer {{token}}
