@@ -1,3 +1,5 @@
+# Backend/HotelYa/hotel_ya/apis/hotel.py
+
 # ==============================================================================
 # ARCHIVO: hotel_ya/apis/hotel.py
 # PROPÓSITO: Este módulo define los endpoints de la API de Flask para la pantalla
@@ -173,3 +175,98 @@ def get_hotel_details(hotel_id):
     finally:
         # Cierre definitivo de la sesión de SQLAlchemy para evitar fugas en el pool de conexiones
         session.close()
+
+@api.route('/apis/v1/reviews', methods = ['POST'])
+def send_review():
+    response = None
+    status = 200
+    session = Session()
+
+    data = request.get_json()   
+
+    if not data or 'hotel_id' not in data or 'user_id' not in data:
+        return jsonify({'success': False, 'message': 'Error al enviar la reseña'}), 500
+
+    try:
+        star = data.get('star')
+        comment = data.get('comment')
+        hotel_id = data.get('hotel_id')
+        user_id = data.get('user_id')
+        
+        new_review = Review(star=star, comment=comment, hotel_id=hotel_id, user_id=user_id)
+        session.add(new_review)
+        session.commit()
+
+        response = jsonify({
+            'message': 'Reseña enviada correctamente',
+            'data': {
+                'id': new_review.id,
+                'star': new_review.star,
+                'comment': new_review.comment,
+                'hotel_id': new_review.hotel_id,
+                'user_id': new_review.user_id,
+                'created_at': new_review.created_at.isoformat()
+            },
+            'success': True,
+            'error': None
+        })
+        status = 201
+        
+    except Exception as e:
+        traceback.print_exc()
+        response = jsonify({
+            'message': 'Ocurrió un error al enviar la reseña',
+            'data': None,
+            'success': False,
+            'error': str(e)
+        })
+        status = 500
+    finally:
+        session.close()
+    return response, status
+
+@api.route('/apis/v1/reviews',methods = ["GET"])
+def get_reviews():
+    response = None
+    status = 200
+    session = Session()
+    try:
+        hotel_id = request.args.get('hotel_id')
+        reviews = session.query(Review).options(
+            joinedload(Review.user)
+        ).filter(Review.hotel_id == hotel_id).all()
+
+        response = jsonify({
+            'message': 'Reseñas obtenidas correctamente',
+            'data': [
+                {
+                    'id': review.id,
+                    'star': review.star,
+                    'comment': review.comment,
+                    'hotel_id': review.hotel_id,
+                    'user_id': review.user_id,
+                    'user': {
+                        'id': review.user.id,
+                        'name': review.user.name,
+                        'email': review.user.email,
+                    }
+                }
+                for review in reviews
+            ],
+            'success': True,
+            'error': None
+        })
+        status = 200
+
+    except Exception as e:
+        traceback.print_exc()
+        response = jsonify({
+            'message': 'Ocurrió un error al enviar la reseña',
+            'data': None,
+            'success': False,
+            'error': str(e)
+        })
+        status = 500
+    finally:
+        session.close()
+    return response, status
