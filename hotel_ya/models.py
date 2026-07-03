@@ -112,7 +112,6 @@ class User(Base, ToString):
     loyalty_transactions = relationship('LoyaltyTransaction', back_populates='user')
     reward_redemptions = relationship('RewardRedemption', back_populates='user')
     reviews = relationship('Review', back_populates='user')
-    notifications = relationship('Notification', back_populates='user')
 
 
 class Reservation(Base, ToString):
@@ -237,20 +236,6 @@ class Review(Base, ToString):
     reservation = relationship('Reservation', back_populates='reviews')
     user = relationship('User', back_populates='reviews')
     hotel = relationship('Hotel', back_populates='reviews')
-
-
-class Notification(Base, ToString):
-    __tablename__ = 'notifications'
-    id_notification = Column(String, primary_key=True)
-    user_id = Column(String, ForeignKey('users.id_user', ondelete="CASCADE"), nullable=False)
-    reservation_id = Column(String, ForeignKey('reservations.id_reservation', ondelete="SET NULL"), nullable=True)
-    title = Column(String)
-    body = Column(String)
-    type = Column(String)
-    is_read = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
-
-    user = relationship('User', back_populates='notifications')
 
 
 def model_to_dict(self):

@@ -13,9 +13,10 @@
 # ==============================================================================
 
 import traceback
+from datetime import datetime
 from flask import Blueprint, jsonify, request
 from main.database import Session
-from main.models import Hotel, Room, Review, Service
+from hotel_ya.models import Hotel, Room, Review, Service
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func
 
@@ -182,30 +183,40 @@ def send_review():
     status = 200
     session = Session()
 
-    data = request.get_json()   
+    data = request.get_json()
 
     if not data or 'hotel_id' not in data or 'user_id' not in data:
-        return jsonify({'success': False, 'message': 'Error al enviar la reseña'}), 500
+        return jsonify({'success': False, 'message': 'Error al enviar la reseña'}), 400
 
     try:
-        star = data.get('star')
+        # La columna real del modelo es 'rating' (aceptamos 'rating' o el legacy 'star')
+        rating = data.get('rating', data.get('star'))
         comment = data.get('comment')
         hotel_id = data.get('hotel_id')
         user_id = data.get('user_id')
-        
-        new_review = Review(star=star, comment=comment, hotel_id=hotel_id, user_id=user_id)
+
+        # Generamos la PK id_review (el modelo no tiene default para la clave primaria)
+        review_id = f"rev_{int(datetime.utcnow().timestamp())}"
+
+        new_review = Review(
+            id_review=review_id,
+            rating=rating,
+            comment=comment,
+            hotel_id=hotel_id,
+            user_id=user_id
+        )
         session.add(new_review)
         session.commit()
 
         response = jsonify({
             'message': 'Reseña enviada correctamente',
             'data': {
-                'id': new_review.id,
-                'star': new_review.star,
+                'id': new_review.id_review,
+                'rating': new_review.rating,
                 'comment': new_review.comment,
                 'hotel_id': new_review.hotel_id,
                 'user_id': new_review.user_id,
-                'created_at': new_review.created_at.isoformat()
+                'created_at': new_review.created_at.isoformat() if new_review.created_at else None
             },
             'success': True,
             'error': None
@@ -240,16 +251,16 @@ def get_reviews():
             'message': 'Reseñas obtenidas correctamente',
             'data': [
                 {
-                    'id': review.id,
-                    'star': review.star,
+                    'id': review.id_review,
+                    'rating': review.rating,
                     'comment': review.comment,
                     'hotel_id': review.hotel_id,
                     'user_id': review.user_id,
                     'user': {
-                        'id': review.user.id,
+                        'id': review.user.id_user,
                         'name': review.user.name,
                         'email': review.user.email,
-                    }
+                    } if review.user else None
                 }
                 for review in reviews
             ],

@@ -1,0 +1,4 @@
+{
+	"snyk.advanced.autoSelectOrganization": true,
+	"python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe"
+}

@@ -1,0 +1,4 @@
+db/hotelya.db
+db/hotelya.db-journal
+.bundle/
+vendor/

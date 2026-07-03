@@ -1,24 +1,49 @@
 ### ==============================================================================
-### VARIABLES GLOBALES DEL MÓDULO
+### VARIABLES GLOBALES DEL MÓDULO — HOTELES, HABITACIONES Y RESEÑAS
+### (Endpoints públicos: no requieren token)
 ### ==============================================================================
 @baseUrl = http://localhost:5000/apis/v1
-@idHotel = hot_paradisio_01
-@idTipoHabitacion = rt_suite_deluxe
+@idHotel = h1
+@idTipoHabitacion = rt2
 
-### Obtener hoteles destacados para la pantalla principal (Home)
+### Hoteles destacados para la pantalla principal (Home)
 GET {{baseUrl}}/home
 
 ###
 
-### Buscar hoteles por texto (Barra de búsqueda en Flutter)
-GET {{baseUrl}}/home?q=paradise
+### Buscar hoteles por texto (barra de búsqueda en Flutter)
+## el q es la query y en la query se pone el nombre a buscar
+GET {{baseUrl}}/home?q=Cusco Imperial
 
 ###
 
-### Obtener la ficha técnica detallada de un hotel (Habitaciones, Amenidades)
+### Ficha técnica detallada de un hotel (habitaciones, amenidades, servicios)
 GET {{baseUrl}}/hotels/{{idHotel}}
 
 ###
 
-### Consultar características, capacidad y precio base de un tipo de habitación
+### Características, capacidad y precio base de un tipo de habitación
 GET {{baseUrl}}/room-types/{{idTipoHabitacion}}
+
+###
+
+### Habitaciones DISPONIBLES por rango de fechas (excluye ocupadas)
+GET {{baseUrl}}/rooms/availability?check_in=2026-06-02&check_out=2027-06-03&hotel_id={{idHotel}}
+
+###
+
+### Ver reseñas de un hotel
+GET {{baseUrl}}/reviews?hotel_id={{idHotel}}
+
+###
+
+### Enviar una reseña de un hotel
+POST {{baseUrl}}/reviews
+Content-Type: application/json
+
+{
+    "rating": 5,
+    "comment": "Excelente atención y ubicacion :v",
+    "hotel_id": "h1",
+    "user_id": "u1"
+}

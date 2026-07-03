@@ -1,5 +1,12 @@
 import sqlite3
 import os
+import sys
+
+# En Windows la consola usa cp1252 y truena con los emojis de los prints; forzamos UTF-8.
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except Exception:
+    pass
 
 db_path = "app.db"
 migrations_dir = "migrations" 

@@ -17,7 +17,8 @@ APP.config['SESSION_PERMANENT'] = False
 APP.config['SESSION_USE_SIGNER'] = True
 APP.config['SESSION_KEY_PREFIX'] = 'session:'
 APP.config['JWT_SECRET_KEY'] = 'd7e7c95f0fd3d4b9d4e6c55a3e2d65c2f77f3b9d6d2a1f4e8b8d9c6a7e5f3d2' 
-APP.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=15)
+APP.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=30)
+APP.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
 Session(APP)
 
 jwt = JWTManager(APP)

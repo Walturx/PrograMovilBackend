@@ -8,10 +8,11 @@
 #            en contratos limpios y seguros para los modelos en el Front-End.
 # ==============================================================================
 
+import random
 import traceback
 from datetime import timedelta, datetime
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt, get_jwt_identity
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt, get_jwt_identity
 from main.database import Session
 from main.models import User
 from main.application import REVOKED_TOKENS  # Lista negra global para la revocación de tokens
@@ -69,7 +70,10 @@ def login():
                 'error': 'Unauthorized'
             }), 401
 
-        access_token = create_access_token(identity=str(user.id_user), expires_delta=timedelta(days=7))
+        # Access token de vida corta (usa el JWT_ACCESS_TOKEN_EXPIRES global = 30 min)
+        access_token = create_access_token(identity=str(user.id_user))
+        # Refresh token de vida larga (30 días); solo sirve para pedir nuevos access tokens
+        refresh_token = create_refresh_token(identity=str(user.id_user))
 
         # 💡 MODIFICACIÓN: Obtener estrellas disponibles de forma segura para mapearlo en la sesión iniciada
         stars = int(getattr(user, 'stars_available', 0) or 0)
@@ -78,6 +82,7 @@ def login():
             'message': 'Autenticación exitosa',
             'data': {
                 'token': access_token,
+                'refresh_token': refresh_token,
                 'user': {
                     'id': user.id_user,
                     'email': user.email,
@@ -198,6 +203,7 @@ def forgot_password():
     try:
         user = session.query(User).filter(User.email == email).first()
         if not user:
+            # Respuesta neutra: no revelamos si el correo existe o no (buena práctica de seguridad)
             return jsonify({
                 'message': 'Si el correo electrónico existe en nuestros registros, recibirá un mensaje a la brevedad',
                 'data': None,
@@ -205,9 +211,16 @@ def forgot_password():
                 'error': None
             }), 200
 
+        # Generamos un código de 6 dígitos y lo persistimos en la BD (columna reset_password_token)
+        token = random.randint(100000, 999999)
+        user.reset_password_token = token
+        session.commit()
+
+        # NOTA: en producción este código se enviaría por correo. Aquí lo devolvemos
+        # en la respuesta para poder probar el flujo de reset desde REST Client.
         return jsonify({
             'message': 'Se ha enviado un enlace de restauración al correo proporcionado',
-            'data': {'email': email},
+            'data': {'email': email, 'reset_token': token},
             'success': True,
             'error': None
         }), 200
@@ -363,3 +376,95 @@ def update_user_profile():
         }), 500
     finally:
         session.close()
+
+
+@api.route('/apis/v1/users/reset-password', methods=['POST'])
+def reset_password():
+    """
+    Endpoint para Restablecer la Contraseña.
+
+    POST /apis/v1/users/reset-password
+    Recibe el correo, el código enviado por 'forgot-password' y la nueva contraseña.
+    Valida que el código coincida con el guardado en la BD y actualiza la clave.
+
+    Body JSON:
+        { "email": "...", "token": 123456, "new_password": "..." }
+    """
+    data = request.get_json() or {}
+    if not all(k in data for k in ('email', 'token', 'new_password')):
+        return jsonify({
+            'message': 'email, token y new_password son obligatorios',
+            'data': None,
+            'success': False,
+            'error': 'Bad Request'
+        }), 400
+
+    email = data.get('email').strip().lower()
+    session = Session()
+    try:
+        user = session.query(User).filter(User.email == email).first()
+
+        # Validamos usuario, que exista un token pendiente y que coincida con el enviado
+        if not user or not user.reset_password_token or str(user.reset_password_token) != str(data.get('token')):
+            return jsonify({
+                'message': 'El código de recuperación es inválido o ha expirado',
+                'data': None,
+                'success': False,
+                'error': 'Unauthorized'
+            }), 401
+
+        # Actualizamos la contraseña (esquema actual: se compara password_hash directo en login)
+        user.password_hash = data.get('new_password')
+        # Invalidamos el token para que no pueda reutilizarse
+        user.reset_password_token = None
+        session.commit()
+
+        return jsonify({
+            'message': 'Contraseña restablecida correctamente',
+            'data': {'email': email},
+            'success': True,
+            'error': None
+        }), 200
+
+    except Exception as e:
+        session.rollback()
+        traceback.print_exc()
+        return jsonify({
+            'message': 'Error al restablecer la contraseña',
+            'data': None,
+            'success': False,
+            'error': str(e)
+        }), 500
+    finally:
+        session.close()
+
+
+@api.route('/apis/v1/auth/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh_access_token():
+    """
+    Endpoint para Renovar el Access Token.
+
+    POST /apis/v1/auth/refresh
+    Requiere enviar el REFRESH token (no el de acceso) en el header:
+        Authorization: Bearer <refresh_token>
+    Devuelve un access token nuevo sin pedir credenciales otra vez.
+    """
+    try:
+        identity = get_jwt_identity()  # id_user embebido en el refresh token
+        new_access_token = create_access_token(identity=identity)
+
+        return jsonify({
+            'message': 'Token renovado correctamente',
+            'data': {'token': new_access_token},
+            'success': True,
+            'error': None
+        }), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({
+            'message': 'Error al renovar el token',
+            'data': None,
+            'success': False,
+            'error': str(e)
+        }), 500

@@ -2,14 +2,36 @@
 ### VARIABLES GLOBALES DEL MÓDULO
 ### ==============================================================================
 @baseUrl = http://localhost:5000/apis/v1
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc4Mjc0OTg1MiwianRpIjoiNmJhMDgyMjctNDI0Zi00YzUzLTgwNTUtM2VjM2Q2YTI0ZDAwIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InVzcl8xNzgyNzY3MjAyIiwibmJmIjoxNzgyNzQ5ODUyLCJjc3JmIjoiMjllNGUwNTktMzIwNC00NWY5LWI1YTMtMGRmZDcyMWQzZjhkIiwiZXhwIjoxNzgzMzU0NjUyfQ.zm_Zcq8mBt-_dzf2P-bd8NlaIYsA7LAh2poT-9Aw8YU
+
+### ==============================================================================
+### LOGIN (ejecútalo PRIMERO: token y refresh_token se capturan automáticamente)
+### ==============================================================================
+# @name login
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+    "email": "juan@email.com",
+    "password": "12345678"
+}
+
+###
+# Tokens capturados automáticamente de la respuesta del login de arriba
+@token = {{login.response.body.data.token}}
+@refreshToken = {{login.response.body.data.refresh_token}}
+
+### Renovar el ACCESS token usando el REFRESH token (sin volver a loguear)
+POST {{baseUrl}}/auth/refresh
+Authorization: Bearer {{refreshToken}}
+
+###
 
 ### Registrar un nuevo usuario
 POST {{baseUrl}}/users/register
 Content-Type: application/json
 
 {
-    "email": "carlos_flutter_4@example.com",
+    "email": "carlos_flutter_456@example.com",
     "password": "mi_password_segura",
     "name": "Carlos",
     "lastname": "Mendoza",
@@ -20,12 +42,14 @@ Content-Type: application/json
 
 ###
 
-### Iniciar sesión (Login)
+### Iniciar sesión (Login) — usuario carlos recién registrado
+### OJO: este bloque NO actualiza {{token}}. El {{token}} lo fija SOLO el bloque
+### "LOGIN" de arriba (# @name login, juan). Este es solo para comprobar el login de carlos.
 POST {{baseUrl}}/users/login
 Content-Type: application/json
 
 {
-    "email": "carlos_flutter_4@example.com",
+    "email": "carlos_flutter_45@example.com",
     "password": "mi_password_segura"
 }
 
@@ -55,16 +79,32 @@ Content-Type: application/json
 
 ###
 
-### Recuperar Contraseña (Simulación de envío de correo)
+### Recuperar Contraseña — PASO 1: pedir el código (devuelve reset_token para pruebas)
+# @name forgot
 POST {{baseUrl}}/users/forgot-password
 Content-Type: application/json
 
 {
-    "email": "carlos_flutter@example.com"
+    "email": "juan@email.com"
+}
+
+###
+
+### Restablecer Contraseña — PASO 2: usar el código del paso anterior (se toma solo)
+POST {{baseUrl}}/users/reset-password
+Content-Type: application/json
+
+{
+    "email": "juan@email.com",
+    "token": "Cambiar por el token que da el anterior endpoint",
+    "new_password": "12345678"
 }
 
 ###
 
 ### Cerrar sesión (Logout - Envía token actual a la lista negra)
+### DISPARA ESTO AL FINAL: revoca {{token}}. Después de esto, /me, /validate-token,
+### /profile, etc. darán 401 con ese token (es lo correcto). Para seguir probando,
+### vuelve a ejecutar el bloque "LOGIN" de arriba y {{token}} se renueva solo.
 POST {{baseUrl}}/users/logout
 Authorization: Bearer {{token}}

@@ -1,25 +1,45 @@
 ### ==============================================================================
-### VARIABLES GLOBALES DEL MÓDULO
+### VARIABLES GLOBALES DEL MÓDULO — LEALTAD (estrellas y premios)
 ### ==============================================================================
 @baseUrl = http://localhost:5000/apis/v1
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTc4Mjc0OTg1MiwianRpIjoiNmJhMDgyMjctNDI0Zi00YzUzLTgwNTUtM2VjM2Q2YTI0ZDAwIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InVzcl8xNzgyNzY3MjAyIiwibmJmIjoxNzgyNzQ5ODUyLCJjc3JmIjoiMjllNGUwNTktMzIwNC00NWY5LWI1YTMtMGRmZDcyMWQzZjhkIiwiZXhwIjoxNzgzMzU0NjUyfQ.zm_Zcq8mBt-_dzf2P-bd8NlaIYsA7LAh2poT-9Aw8YU
+
+### ==============================================================================
+### LOGIN (ejecútalo PRIMERO: el token se captura automáticamente)
+### ==============================================================================
+# @name login
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+    "email": "juan@email.com",
+    "password": "12345678"
+}
+
+###
+@token = {{login.response.body.data.token}}
 
 ### Ver el catálogo público de premios disponibles para cambiar por estrellas
 GET {{baseUrl}}/loyalty/rewards
 
 ###
 
-### Procesar el canje de una recompensa (Resta estrellas y crea el cupón)
+### Procesar el canje de una recompensa (resta estrellas y crea el cupón)
 POST {{baseUrl}}/loyalty/redeem
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-    "reward_id": "rw1"
+    "reward_id": "rw2"
 }
 
 ###
 
-### Ver "Mis Cupones" en la app móvil (Historial de premios listos o usados)
+### Historial de transacciones de estrellas (ganadas y gastadas)
+GET {{baseUrl}}/loyalty/history
+Authorization: Bearer {{token}}
+
+###
+
+### Ver "Mis canjes" (premios canjeados por el usuario)
 GET {{baseUrl}}/loyalty/redemptions
 Authorization: Bearer {{token}}

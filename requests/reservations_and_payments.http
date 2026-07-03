@@ -2,9 +2,24 @@
 ### VARIABLES GLOBALES DEL MÓDULO
 ### ==============================================================================
 @baseUrl = http://localhost:5000/apis/v1
-@token = TU_JWT_AQUI
-@idReserva = res_1234567890
+@idReserva = res1
 @idRoomType = rt1
+
+### ==============================================================================
+### LOGIN (ejecuta esto PRIMERO; el token se toma automáticamente abajo)
+### ==============================================================================
+# @name login
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+    "email": "juan@email.com",
+    "password": "12345678"
+}
+
+###
+# Token capturado automáticamente de la respuesta del login de arriba
+@token = {{login.response.body.data.token}}
 
 ### ==============================================================================
 ### ROOM TYPES
@@ -18,6 +33,18 @@ GET {{baseUrl}}/room-types/{{idRoomType}}
 ### ==============================================================================
 ### RESERVAS
 ### ==============================================================================
+
+### Consultar habitaciones DISPONIBLES por rango de fechas (público)
+### Excluye las ocupadas por reservas que se crucen con las fechas pedidas.
+GET {{baseUrl}}/rooms/availability?check_in=2026-05-10&check_out=2026-05-13&hotel_id=h1
+
+###
+
+### Ver el DETALLE de una reserva específica (solo el dueño del token)
+GET {{baseUrl}}/reservations/{{idReserva}}
+Authorization: Bearer {{token}}
+
+###
 
 ### Crear una nueva reserva (atómica con acompañantes)
 POST {{baseUrl}}/reservations

@@ -26,7 +26,10 @@ CREATE TABLE users (
     nationality TEXT,
     reset_password_token INTEGER,
     status BOOLEAN DEFAULT 1,
-    stars_available INTEGER DEFAULT 0
+    stars_available INTEGER DEFAULT 0,
+    user_name VARCHAR(20),
+    password VARCHAR(250),
+    member_id INTEGER
 );
 
 -- 3. HOTELS
@@ -206,22 +209,7 @@ CREATE TABLE reviews (
     FOREIGN KEY (hotel_id) REFERENCES hotels(id_hotel) ON DELETE CASCADE
 );
 
--- 18. NOTIFICATIONS
-CREATE TABLE notifications (
-    id_notification TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    reservation_id TEXT,
-    title TEXT,
-    body TEXT,
-    type TEXT,
-    is_read BOOLEAN DEFAULT 0,
-    created_at DATETIME,
-    FOREIGN KEY (user_id) REFERENCES users(id_user) ON DELETE CASCADE,
-    FOREIGN KEY (reservation_id) REFERENCES reservations(id_reservation) ON DELETE SET NULL
-);
-
 -- migrate:down
-DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS loyalty_transactions;
 DROP TABLE IF EXISTS reward_redemptions;

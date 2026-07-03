@@ -1,41 +1,44 @@
 ### ==============================================================================
-### VARIABLES GLOBALES DEL MÓDULO
+### VARIABLES GLOBALES DEL MÓDULO — SERVICIOS
+### (Notificaciones se retiró del backend, ya no se prueba aquí)
 ### ==============================================================================
 @baseUrl = http://localhost:5000/apis/v1
-@token = TU_JWT_TOKEN_AQUI
-@idReserva = res_777888
-@idNotificacion = not_abc123
+@idReserva = res1
+@idService = srv-spa
 
-### Ver el catálogo general de servicios adicionales del hotel
+### ==============================================================================
+### LOGIN (ejecútalo PRIMERO: el token se captura automáticamente)
+### ==============================================================================
+# @name login
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+    "email": "juan@email.com",
+    "password": "12345678"
+}
+
+###
+@token = {{login.response.body.data.token}}
+
+### Ver el catálogo general de servicios adicionales del hotel (público)
 GET {{baseUrl}}/services
 
 ###
 
-### Cargar un consumo extra de habitación (Vincular orden a una reserva activa)
+### Cargar un consumo extra de habitación (vincular orden a una reserva activa)
 POST {{baseUrl}}/services/order
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
     "reservation_id": "{{idReserva}}",
-    "service_id": "srv_room_service_05",
+    "service_id": "{{idService}}",
     "quantity": 2
 }
 
 ###
 
-### Obtener el desglose de consumos acumulados durante la estadía de una reserva
-GET {{baseUrl}}/services?reservation_id={{idReserva}}
-Authorization: Bearer {{token}}
-
-###
-
-### Obtener la bandeja de notificaciones personales del usuario
-GET {{baseUrl}}/notifications
-Authorization: Bearer {{token}}
-
-###
-
-### Marcar una notificación específica como leída
-PATCH {{baseUrl}}/notifications/{{idNotificacion}}/read
+### Desglose de consumos acumulados de una reserva (endpoint correcto)
+GET {{baseUrl}}/services/room-consumptions/{{idReserva}}
 Authorization: Bearer {{token}}

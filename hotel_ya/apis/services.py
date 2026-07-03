@@ -12,7 +12,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from main.database import Session
-from main.models import Service, ReservationService, Reservation
+from hotel_ya.models import Service, ReservationService, Reservation
 from sqlalchemy.orm import joinedload
 
 # Creación del Blueprint para registrar el módulo de servicios adicionales en Flask

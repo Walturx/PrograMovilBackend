@@ -198,7 +198,7 @@ class LoyaltyTransaction(Base, ToString):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 # ==========================================
-# 7. REVIEWS & NOTIFICATIONS
+# 7. REVIEWS
 # ==========================================
 
 class Review(Base, ToString):
@@ -210,21 +210,3 @@ class Review(Base, ToString):
     rating = Column(Integer, nullable=False)
     comment = Column(TEXT)
     created_at = Column(DateTime, default=datetime.utcnow)
-
-class Notification(Base, ToString):
-    __tablename__ = 'notifications'
-    id_notification = Column(TEXT, primary_key=True)
-    user_id = Column(TEXT, ForeignKey('users.id_user'), nullable=False)
-    reservation_id = Column(TEXT, ForeignKey('reservations.id_reservation'))
-    title = Column(TEXT)
-    body = Column(TEXT)
-    type = Column(TEXT)
-    is_read = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-# Agregamos esta clase para satisfacer la importación que pide 'hotel_ya/apis/notifications.py'
-class UserNotification(Base, ToString):
-    __tablename__ = 'user_notifications'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(TEXT, ForeignKey('users.id_user'))
-    notification_id = Column(TEXT, ForeignKey('notifications.id_notification'))

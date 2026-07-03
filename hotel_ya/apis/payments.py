@@ -56,9 +56,10 @@ def verify_payment_status(reservation_id):
             id_payment=f"pay_{ts}",
             reservation_id=res.id_reservation,
             amount=res.total_price,
-            payment_method='QR_BPI',
+            method='QR_BPI',
             status='completed',
-            transaction_date=datetime.utcnow()
+            paid_at=datetime.utcnow(),
+            transaction_id=f"txn_{ts}"
         ))
 
         stars_awarded = 0

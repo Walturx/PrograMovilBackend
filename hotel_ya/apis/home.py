@@ -11,7 +11,7 @@
 
 import traceback
 from flask import Blueprint, jsonify, request
-from main.models import Hotel, Room, Location, Review
+from hotel_ya.models import Hotel, Room, Location, Review
 from main.database import Session
 from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, func
