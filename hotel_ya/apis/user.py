@@ -87,6 +87,12 @@ def login():
                     'id': user.id_user,
                     'email': user.email,
                     'name': user.name,
+                    'lastname': user.lastname if user.lastname else '',
+                    'phone': user.phone if user.phone else '',
+                    'birthdate': user.birthdate if user.birthdate else '',
+                    'document_type': user.document_type if user.document_type else '',
+                    'document_number': user.document_number if user.document_number else '',
+                    'nationality': user.nationality if user.nationality else '',
                     'stars_available': stars  # <-- Se añadió aquí
                 }
             },
@@ -138,6 +144,10 @@ def register_user():
         # 💡 MODIFICACIÓN: Lee el JSON enviado de Flutter, si no viene el campo usa 120 por defecto.
         initial_stars = int(data.get('stars_available', 120))
 
+        # Edad opcional: si viene un valor numérico lo guardamos, si no queda en None.
+        age_raw = data.get('age')
+        age = int(age_raw) if age_raw not in (None, '') else None
+
         new_user = User(
             id_user=user_id,
             email=email,
@@ -145,6 +155,10 @@ def register_user():
             name=data.get('name'),
             lastname=data.get('lastname', ''),
             phone=data.get('phone', ''),
+            birthdate=data.get('birthdate', ''),         # Fecha de nacimiento del formulario de registro
+            age=age,
+            document_type=data.get('document_type', ''),
+            document_number=data.get('document_number', ''),
             nationality=data.get('nationality', ''),
             avatar_url='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde',
             stars_available=initial_stars  # <-- Se asignan las estrellas aquí
@@ -163,6 +177,12 @@ def register_user():
                     'id': new_user.id_user,
                     'email': new_user.email,
                     'name': new_user.name,
+                    'lastname': new_user.lastname if new_user.lastname else '',
+                    'phone': new_user.phone if new_user.phone else '',
+                    'birthdate': new_user.birthdate if new_user.birthdate else '',
+                    'document_type': new_user.document_type if new_user.document_type else '',
+                    'document_number': new_user.document_number if new_user.document_number else '',
+                    'nationality': new_user.nationality if new_user.nationality else '',
                     'stars_available': new_user.stars_available  # <-- Se añadió aquí para la respuesta de Flutter
                 }
             },
@@ -295,6 +315,9 @@ def get_current_user_profile():
                 'name': user.name,
                 'lastname': user.lastname if user.lastname else '',
                 'phone': user.phone if user.phone else '',
+                'birthdate': user.birthdate if user.birthdate else '',
+                'document_type': user.document_type if user.document_type else '',
+                'document_number': user.document_number if user.document_number else '',
                 'avatar_url': user.avatar_url if user.avatar_url else 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde',
                 'nationality': user.nationality if user.nationality else '',
                 'stars_available': int(stars_available)
@@ -342,6 +365,12 @@ def update_user_profile():
             user.lastname = req_data['lastname']
         if 'phone' in req_data:
             user.phone = req_data['phone']
+        if 'birthdate' in req_data:
+            user.birthdate = req_data['birthdate']
+        if 'document_type' in req_data:
+            user.document_type = req_data['document_type']
+        if 'document_number' in req_data:
+            user.document_number = req_data['document_number']
         if 'nationality' in req_data:
             user.nationality = req_data['nationality']
         if 'avatar_url' in req_data:
@@ -357,6 +386,9 @@ def update_user_profile():
                 'name': user.name,
                 'lastname': user.lastname if user.lastname else '',
                 'phone': user.phone if user.phone else '',
+                'birthdate': user.birthdate if user.birthdate else '',
+                'document_type': user.document_type if user.document_type else '',
+                'document_number': user.document_number if user.document_number else '',
                 'avatar_url': user.avatar_url if user.avatar_url else 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde',
                 'nationality': user.nationality if user.nationality else '',
                 'stars_available': int(getattr(user, 'stars_available', 0) or 0)

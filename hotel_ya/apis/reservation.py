@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from main.database import Session
-from main.models import Reservation, Room, RoomType, Guest
+from main.models import Reservation, Room, RoomType, Guest, Hotel
 
 api = Blueprint('hotel_ya_apis_reservations', __name__)
 
@@ -132,9 +132,22 @@ def get_my_reservations():
         data = []
         for r in reservations:
             guests = session.query(Guest).filter_by(reservation_id=r.id_reservation).all()
+
+            # Resolvemos el nombre del hotel y del tipo de habitación para que el
+            # historial de Flutter los muestre sin necesitar tablas de lookup.
+            room = session.query(Room).filter_by(id_room=r.room_id).first()
+            hotel = session.query(Hotel).filter_by(id_hotel=room.hotel_id).first() if room else None
+            room_type = (
+                session.query(RoomType).filter_by(id_room_type=room.room_type_id).first()
+                if room else None
+            )
+
             data.append({
                 'id': r.id_reservation,
                 'room_id': r.room_id,
+                'hotel_name': hotel.name if hotel else 'Hotel',
+                'room_type_name': room_type.name if room_type else 'Habitación',
+                'room_number': room.room_number if room else '',
                 'check_in': fmt(r.check_in),
                 'check_out': fmt(r.check_out),
                 'total_price': float(r.total_price or 0),

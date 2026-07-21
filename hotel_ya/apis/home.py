@@ -91,8 +91,13 @@ def get_home():
             # Construcción de la entidad de respuesta adaptada a Dart (HotelModel.fromJson)
             hotels_list.append({
                 'id': hotel.id_hotel,                # 💡 CORRECCIÓN CRÍTICA: Se expone 'id_hotel' bajo la clave 'id' hacia Flutter
+                'location_id': hotel.location_id if hotel.location_id else '',
                 'name': hotel.name,
+                'description': hotel.description if hotel.description else '',
                 'stars': hotel.stars,
+                'phone': hotel.phone if hotel.phone else '',
+                'email': hotel.email if hotel.email else '',
+                'is_active': bool(hotel.is_active),
                 'rating': rating_final,             # Inyectado dinámicamente sin romper la tabla original
                 'distance': '1.2 miles',            # Simulado temporalmente para la interfaz de geolocalización
                 'available_rooms': available_rooms_count,
